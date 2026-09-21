@@ -1,0 +1,44 @@
+<!doctype html><meta charset="utf-8"><body style="margin:0">
+<iframe id="f" src="/index.html" style="width:1600px;height:900px;border:0;display:block"></iframe>
+<pre id="log" style="font:12px monospace;padding:8px"></pre>
+<script>
+const f=document.getElementById('f'), log=document.getElementById('log');
+const wait=(cond,ms=4000)=>new Promise((res,rej)=>{const t0=Date.now();(function tick(){try{if(cond())return res();}catch(e){}if(Date.now()-t0>ms)return rej(new Error('timeout: '+cond));setTimeout(tick,40);})();});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+window.RESULT = {steps:[]};
+f.onload = async () => {
+  const w = f.contentWindow, d = w.document;
+  try {
+    await wait(()=>d.getElementById('s-intro').classList.contains('active'));
+    RESULT.steps.push({screen:'intro', pct:d.getElementById('introPct').textContent});
+    d.getElementById('btnStart').click();
+    await wait(()=>d.getElementById('s-dec1').classList.contains('active'));
+    RESULT.steps.push({screen:'dec1', start:d.getElementById('d1start').textContent, cards:d.querySelectorAll('#grid1 .actor-card').length});
+    // pick protective choices: poca/poca/molta (mixed) to exercise all three levels at least once
+    d.querySelector('#grid1 .lvl[data-actor="abast"][data-level="normal"]').click();
+    d.querySelector('#grid1 .lvl[data-actor="reg"][data-level="poca"]').click();
+    d.querySelector('#grid1 .lvl[data-actor="eco"][data-level="molta"]').click();
+    await sleep(60);
+    RESULT.steps.push({screen:'dec1-ready', btnDisabled: d.getElementById('btnGo1').disabled});
+    d.getElementById('btnGo1').click();
+    await wait(()=>d.getElementById('s-load1').classList.contains('active'));
+    await wait(()=>d.getElementById('s-res1').classList.contains('active'), 3000);
+    await sleep(150);
+    RESULT.steps.push({screen:'res1', take:d.getElementById('take1').textContent, chartHasPaths: d.getElementById('chart1').querySelectorAll('path').length});
+    d.getElementById('btnGo2').click();
+    await wait(()=>d.getElementById('s-dec2').classList.contains('active'));
+    RESULT.steps.push({screen:'dec2', start:d.getElementById('d2start').textContent});
+    d.querySelector('#grid2 .lvl[data-actor="abast"][data-level="molta"]').click();
+    d.querySelector('#grid2 .lvl[data-actor="reg"][data-level="normal"]').click();
+    d.querySelector('#grid2 .lvl[data-actor="eco"][data-level="poca"]').click();
+    await sleep(60);
+    d.getElementById('btnGo3').click();
+    await wait(()=>d.getElementById('s-load2').classList.contains('active'));
+    await wait(()=>d.getElementById('s-reveal').classList.contains('active'), 3000);
+    await sleep(200);
+    RESULT.steps.push({screen:'reveal', takeFinal:d.getElementById('takeFinal').textContent, epilogue:d.getElementById('epilogueText').textContent,
+      chartPaths: d.getElementById('chartFinal').querySelectorAll('path').length, circles: d.getElementById('chartFinal').querySelectorAll('circle').length});
+    log.textContent = JSON.stringify(RESULT, null, 1);
+  } catch (e) { log.textContent = 'ERROR: ' + e.message + '\n' + JSON.stringify(RESULT,null,1); }
+};
+</script>
